@@ -51,11 +51,12 @@
 ;;Type: [Number * Number -> LzlList<Pair<Number,Number>>
 ;;Pre-condition: init =/= 0
 ;;Tests: (take (sqrt-lzl 2 1) 3) →  '((1 . 1) (3/2 . 1/4) (17/12 . 1/144)) 
-(define sqrt-lzl 
-  (lambda (x init)
-   @TODO
-  )
-)  
+(define sqrt-lzl
+		(lambda (x init)
+			(cons (cons init (abs (- (square init) x)))
+				(lambda () (sqrt-lzl x (improve init x)))))
+)
+ 
 
 ;;Signature: find-first(lzlst, p)
 ;;Purpose: Return the first item in the given lazy list which satisfies the given predicate. If no such item exists return 'fail.
@@ -63,22 +64,24 @@
 ;;Pre-condition: /
 ;;Tests: (find-first (integers-from 1) (lambda (x) (> x 10))) --> 11; (find-first (cons-lzl 1 (lambda() (cons-lzl 2 (lambda () '())))) (lambda (x) (> x 10))) --> 'fail
 
-(define find-first
-  (lambda (lz-lst p)
-   @TODO
-  )
-)
+(define find-first 
+		(lambda (lz-lst p)
+		 (cond ((empty-lzl? lz-lst) 'fail)
+			 ((p (head lz-lst)) (head lz-lst))
+			 (else (find-first (tail lz-lst) p)))))
+
 
 ;;Signature: sqrt2(x,init,epsilon)
 ;;Purpose: return approximation of the square root of the given number x, according to Newton method, starting from init guess with epsilon threshold.  The procedure uses sqrt-lzl and find-first procedures.
 ;;Type: [Number * Number * Number -> Number]
 ;;Pre-condition: init =/= 0
 ;;Tests: (sqrt2 2 1 0.0001) → 1 169/408
-(define sqrt2
-  (lambda (x init epsilon)
-   @TODO
-  )
-)
+(define sqrt2 
+		(lambda (x init epsilon)
+		 (car
+			 (find-first (sqrt-lzl x init)
+			 (lambda (pr)
+				 (good-enough? (car pr) x epsilon))))))
 
 
 ;;;; Q2
@@ -87,9 +90,14 @@
 ;;Purpose: Find the value of 'key'. If 'key' is not found return �fail.
 ;;Type: [List<Pair(Symbol,T)>*Symbol -> T | 'fail)
 ;;Tests: (get-value '((a . 3) (b . 4)) 'b) --> 4,(get-value '((a . 3) (b . 4)) 'c) --> 'fail
+
 (define get-value
   (lambda (assoc-list key)
-   @TODO
+    (cond
+      ((null? assoc-list) 'fail)
+      ((eq? (car (car assoc-list)) key)
+        (cdr (car assoc-list)))
+      (else (get-value (cdr assoc-list) key)))
   )
 )
 
@@ -99,9 +107,12 @@
 ;;Tests: > (get-value$ '((a . 3) (b . 4)) 'b (lambda(x) (* x x )) (lambda()#f)) --> 16, (get-value$ '((a . 3) (b . 4)) 'c (lambda(x) (* x x)) (lambda()#f)) --> #f
 (define get-value$
   (lambda (assoc-list key success fail)
-   @TODO
+    (cond ((null? assoc-list) (fail))
+          ((eq? (car (car assoc-list)) key) (success (cdr (car assoc-list))))
+          (else (get-value$ (cdr assoc-list) key success fail)))
   )
 )
+
 
 ;;Signature: collect-all-values(list-assoc-lists, key)
 ;;Purpose: Returns a list of all values of the first occurrence of 'key' in each of the given association lists. If no such value, returns the empty list.
@@ -114,14 +125,23 @@
 
 (define collect-all-values-1
  (lambda (lists key)
-  @TODO
+   (if (null? lists)
+       '()
+       (let ((val (get-value (car lists) key)))
+         (if (eq? val 'fail)
+             (collect-all-values-1 (cdr lists) key)
+             (cons val (collect-all-values-1 (cdr lists) key)))))
  )
 )
 
+
 (define collect-all-values-2
  (lambda (lists key)
-  @TODO
+   (if (null? lists)
+        '()
+        (get-value$ (car lists) 
+                    key 
+                    (lambda (val) (cons val (collect-all-values-2 (cdr lists) key))) 
+                    (lambda () (collect-all-values-2 (cdr lists) key))))
  )
 )
-   
-   
